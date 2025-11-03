@@ -1,0 +1,51 @@
+# OWASP ZAP Rules Configuration
+# Format: ID	THRESHOLD	[WARN|FAIL|IGNORE|INFO]
+# 
+# Reglas de seguridad para el escaneo
+# WARN: Genera una advertencia pero no falla el build
+# FAIL: Falla el build si se detecta
+# IGNORE: Ignora la regla
+# INFO: Solo información
+
+# Inyección SQL
+40018	WARN	SQL Injection
+40019	WARN	SQL Injection - SQLite
+40020	WARN	SQL Injection - Hypersonic SQL
+40021	WARN	SQL Injection - Oracle
+40022	WARN	SQL Injection - PostgreSQL
+40023	WARN	SQL Injection - MySQL
+
+# Cross-Site Scripting (XSS)
+40012	WARN	Cross Site Scripting (Reflected)
+40014	WARN	Cross Site Scripting (Persistent)
+40016	WARN	Cross Site Scripting (Persistent) - Prime
+40017	WARN	Cross Site Scripting (Persistent) - Spider
+
+# CSRF
+10202	WARN	Absence of Anti-CSRF Tokens
+
+# Configuración de seguridad
+10021	INFO	X-Content-Type-Options Header Missing
+10020	INFO	X-Frame-Options Header Not Set
+10038	INFO	Content Security Policy (CSP) Header Not Set
+10055	INFO	CSP: Wildcard Directive
+10056	INFO	CSP: script-src unsafe-inline
+10057	INFO	CSP: script-src unsafe-eval
+
+# Autenticación
+10101	WARN	Weak Authentication Method
+
+# Sesiones
+10112	WARN	Session ID in URL Rewrite
+
+# Divulgación de información
+10049	INFO	Server Leaks Version Information via "Server" HTTP Response Header Field
+10096	INFO	Timestamp Disclosure
+10054	INFO	Cookie Without SameSite Attribute
+10063	INFO	Feature Policy Header Not Set
+
+# Path Traversal
+6	WARN	Path Traversal
+
+# Remote Code Execution
+90020	WARN	Remote OS Command Injection

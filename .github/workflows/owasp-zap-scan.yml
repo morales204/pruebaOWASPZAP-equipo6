@@ -1,0 +1,90 @@
+name: OWASP ZAP Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Ejecutar cada lunes a las 2 AM
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+    name: Escaneo de Seguridad con OWASP ZAP
+    
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configurar archivo .env para testing
+        run: |
+          echo "SECRET_KEY=test-secret-key-for-security-scan" > .env
+          echo "FLASK_ENV=production" >> .env
+          echo "FLASK_DEBUG=False" >> .env
+          echo "DATABASE_URI=sqlite:///test_usuarios.db" >> .env
+
+      - name: Iniciar aplicación Flask en background
+        run: |
+          python app.py &
+          sleep 10
+          echo "Aplicación Flask iniciada"
+        env:
+          FLASK_ENV: production
+
+      - name: Verificar que la aplicación está corriendo
+        run: |
+          curl -I http://localhost:5000 || echo "Aplicación no responde aún"
+          sleep 5
+          curl -I http://localhost:5000
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:5000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j'
+          fail_action: false
+
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: 'http://localhost:5000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j'
+          fail_action: false
+
+      - name: Subir reporte de ZAP como artefacto
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-scan-report
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
+
+      - name: Crear Issue si se encuentran vulnerabilidades críticas
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Vulnerabilidades de seguridad detectadas por OWASP ZAP',
+              body: 'El escaneo de seguridad con OWASP ZAP ha detectado vulnerabilidades críticas. Por favor revisa los reportes en los artefactos del workflow.',
+              labels: ['security', 'vulnerability', 'urgent']
+            })
